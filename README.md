@@ -68,3 +68,15 @@ Next install the packages.
 ```bash
 npm install
 ```
+
+You can run the development server to make sure everything works fine so far.
+
+```bash
+npm run dev
+```
+
+Now checkout the next branch.
+
+```bash
+git checkout 002-setup-app
+```
