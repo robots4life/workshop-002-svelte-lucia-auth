@@ -44,3 +44,27 @@ Go through the workshop by checking out the first branch **`git checkout 001-set
 ```bash
 git checkout 001-setup-sveltekit
 ```
+
+## 2. Setup SvelteKit
+
+In addition to having the ready-made solution in this workshop repository you can code along in your own project.
+
+Create a new folder and run this command in the terminal inside the new folder.
+
+```bash
+npm create svelte@latest
+```
+
+- choose current directory
+- choose Skeleton project
+- choose TypeScript
+- choose ESLint
+- choose Prettier
+
+That should create a default skeleton project in the folder.
+
+Next install the packages.
+
+```bash
+npm install
+```
