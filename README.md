@@ -23,9 +23,13 @@ Install git
 
 ##### Clone Repository
 
-`git clone git@github.com:robots4life/workshop-002-svelte-lucia-auth.git`
+```bash
+git clone git@github.com:robots4life/workshop-002-svelte-lucia-auth.git
+```
 
-`gh repo clone robots4life/workshop-002-svelte-lucia-auth`
+```bash
+gh repo clone robots4life/workshop-002-svelte-lucia-auth
+```
 
 The branch names are numbered in sequence starting with `001`-`branch-name`, follow the workshop by checking out the branches in sequence.
 
@@ -37,4 +41,6 @@ So with tab completion on your terminal you can just type the next number and ea
 
 ##### Start here.
 
-**`git checkout 001-setup-sveltekit`**
+```bash
+git checkout 001-setup-sveltekit
+```
