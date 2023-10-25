@@ -584,17 +584,41 @@ Datasource "db": SQLite database "dev.db" at "file:./dev.db"
 
 SQLite database dev.db created at file:./dev.db
 
-Applying migration `20231025145352_init`
+Applying migration `20231025151831_init`
 
 The following migration(s) have been created and applied from new schema changes:
 
 migrations/
-  └─ 20231025145352_init/
+  └─ 20231025151831_init/
     └─ migration.sql
 
 Your database is now in sync with your schema.
 
-✔ Generated Prisma Client (v5.5.1) to ./node_modules/@prisma/client in 109ms
+✔ Generated Prisma Client (v5.5.1) to ./node_modules/@prisma/client in 110ms
+```
+
+### 4.5 Centralize the Prisma Client
+
+It is common practice to create a Singleton of the Prisma client to use throughout your app.
+
+:bulb: <a href="https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/instantiate-prisma-client" target="_blank">https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/instantiate-prisma-client</a>
+
+:bulb: <a href="https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/logging" target="_blank">https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/logging</a>
+
+<a href="https://refactoring.guru/design-patterns/singleton" target="_blank">https://refactoring.guru/design-patterns/singleton</a>
+
+Create a new folder `server` in the folder `src/lib`.
+
+Create a new file `prisma.ts` in the folder `src/lib/server`.
+
+**src/lib/server/prisma.ts**
+
+```ts
+import { PrismaClient } from '@prisma/client';
+
+export const db = new PrismaClient({
+	log: ['query']
+});
 ```
 
 Now checkout the next branch.
