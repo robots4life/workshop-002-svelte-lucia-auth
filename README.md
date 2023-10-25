@@ -413,5 +413,5 @@ Last not least, add links to these pages on the root page.
 Now checkout the next branch.
 
 ```bash
-git checkout 003-setup-lucia
+git checkout 003-setup-prisma
 ```
