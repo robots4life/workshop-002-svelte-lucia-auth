@@ -9,7 +9,7 @@ Event
 Repository
 **<a href="https://github.com/robots4life/workshop-002-svelte-lucia-auth" target="_blank">https://github.com/robots4life/workshop-002-svelte-lucia-auth</a>**
 
-### 1.0 Download ZIP file or Clone Repository
+## 1. Clone Repository
 
 ##### Prerequisites
 
