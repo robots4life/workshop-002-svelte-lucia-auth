@@ -13,7 +13,7 @@ Repository
 
 ##### Prerequisites
 
-You need to have Node v18.17.1 or higher and git installed.
+You need to have **Node** v18.17.1 or higher and **git** installed.
 
 Install Node with nvm
 <a href="https://github.com/nvm-sh/nvm" target="_blank">https://github.com/nvm-sh/nvm</a>
@@ -37,7 +37,7 @@ Go through the workshop by checking out the first branch **`git checkout 001-set
 
 :bulb: With tab completion on your terminal you can just type the next number and easily checkout the next branch without having to type the whole name of the next branch.
 
-:bulb: <a href="https://en.wikipedia.org/wiki/Command-line_completion" target="_blank">https://en.wikipedia.org/wiki/Command-line_completion</a>
+<a href="https://en.wikipedia.org/wiki/Command-line_completion" target="_blank">https://en.wikipedia.org/wiki/Command-line_completion</a>
 
 ##### Start here.
 
