@@ -592,3 +592,9 @@ found 0 vulnerabilities
 
 ✔ Generated Prisma Client (v5.5.1) to ./node_modules/@prisma/client in 97ms
 ```
+
+Now checkout the next branch.
+
+```bash
+git checkout 004-setup-lucia
+```
