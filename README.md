@@ -779,3 +779,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 	return await resolve(event);
 };
 ```
+
+Now checkout the next branch.
+
+```bash
+git checkout 005-signup-user
+```
