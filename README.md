@@ -785,3 +785,127 @@ Now checkout the next branch.
 ```bash
 git checkout 005-signup-user
 ```
+
+## 6. Signup User
+
+In the next steps you are going to add the code needed to create a new user in the database.
+
+All of this is done server-side in the **src/routes/signup/+page.server.ts** file.
+
+### 6.1 Do a basic check with the received form values
+
+If the request couldn't be processed because of invalid data, you can return validation errors - along with the previously submitted form values - back to the user, so that they can try again.
+
+The `fail` function lets you return an HTTP status code (typically `400` or `422`, in the case of validation errors) along with the data.
+
+:bulb: <a href="https://kit.svelte.dev/docs/form-actions#anatomy-of-an-action-validation-errors" target="_blank">https://kit.svelte.dev/docs/form-actions#anatomy-of-an-action-validation-errors</a>
+
+**src/routes/signup/+page.server.ts**
+
+```ts
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	console.log(new Date());
+	console.log('SIGNUP page : load function');
+};
+
+import type { Actions } from './$types';
+import { fail } from '@sveltejs/kit';
+
+export const actions: Actions = {
+	default: async ({ request }) => {
+		const formData = await request.formData();
+		console.log('SIGNUP page : form action');
+		console.log(formData);
+
+		const username = formData.get('username');
+		const password = formData.get('password');
+		// basic check
+		if (typeof username !== 'string' || username.length < 4 || username.length > 32) {
+			return fail(400, {
+				message: 'Invalid username'
+			});
+		}
+		if (typeof password !== 'string' || password.length < 4 || password.length > 8) {
+			return fail(400, {
+				message: 'Invalid password'
+			});
+		}
+	}
+};
+```
+
+To display the returned error `message` on the `signup` page you `export` the `form` property on the page and work with the error.
+
+Use the Svelte `class` directive to trigger the `.error` class on the `form` property.
+
+:bulb: <a href="https://learn.svelte.dev/tutorial/classes" target="_blank">https://learn.svelte.dev/tutorial/classes</a>
+
+:exclamation: Change the form values to something that will break the validation to see the server-side check kick in. :exclamation:
+
+**src/routes/signup/+page.svelte**
+
+```html
+<script lang="ts">
+	// export the form property on this page to show the return value of the form action on the page
+	import type { ActionData } from './$types';
+	export let form: ActionData;
+</script>
+
+<a href="/">Home</a>
+<a href="/login">Log In With Username</a>
+<hr />
+
+<h1>Sign Up</h1>
+<hr />
+
+<form id="signup" method="POST">
+	<label for="username">Username</label>
+	<input
+		required
+		type="text"
+		name="username"
+		id="username"
+		minlength="4"
+		maxlength="32"
+		placeholder="Choose Your Username"
+		value="cyber.punk.9731"
+	/>
+
+	<label for="password">Password</label>
+	<input
+		required
+		type="text"
+		name="password"
+		id="password"
+		minlength="4"
+		maxlength="8"
+		placeholder="Choose Your password"
+		value="12345678"
+	/>
+
+	<button form="signup" type="submit">Submit</button>
+</form>
+
+<!-- show the return value from the form action -->
+<!-- use the Svelte class directive to trigger the CSS .error class -->
+<pre class:error="{form?.message}">{JSON.stringify(form, null, 2)}</pre>
+
+<style>
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	button {
+		border-radius: 10px;
+	}
+	.error {
+		background-color: darkred;
+		color: lightgoldenrodyellow;
+		border-radius: 10px;
+		border: 4px solid darkslateblue;
+	}
+</style>
+```
