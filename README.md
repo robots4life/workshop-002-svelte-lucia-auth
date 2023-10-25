@@ -31,13 +31,13 @@ git clone git@github.com:robots4life/workshop-002-svelte-lucia-auth.git
 gh repo clone robots4life/workshop-002-svelte-lucia-auth
 ```
 
-The branch names are numbered in sequence starting with `001`-`branch-name`, follow the workshop by checking out the branches in sequence.
+The branch names are numbered in sequence starting with `001-branch-name`.
 
 Go through the workshop by checking out the first branch **`git checkout 001-setup-sveltekit`** and continue from there.
 
-So with tab completion on your terminal you can just type the next number and easily checkout the next branch without having to type the whole name of the next branch.
+:bulb: With tab completion on your terminal you can just type the next number and easily checkout the next branch without having to type the whole name of the next branch.
 
-<a href="https://en.wikipedia.org/wiki/Command-line_completion" target="_blank">https://en.wikipedia.org/wiki/Command-line_completion</a>
+:bulb: <a href="https://en.wikipedia.org/wiki/Command-line_completion" target="_blank">https://en.wikipedia.org/wiki/Command-line_completion</a>
 
 ##### Start here.
 
