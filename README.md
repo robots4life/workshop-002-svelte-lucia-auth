@@ -488,13 +488,25 @@ More information in our documentation:
 https://pris.ly/d/getting-started
 ```
 
-### 4.4 Setup Prisma Schema for Password Verification with Lucia
+### 4.4 Setup Prisma Schema for Username and Password Authentication with Lucia
 
-The default Prisma schema for Lucia has an `User`, `Key` and `Session` model.
+The default Prisma schema for Lucia has an `User`, a `Key` and a `Session` model.
 
 :bulb: <a href="https://lucia-auth.com/database-adapters/prisma#prisma-schema" target="_blank">https://lucia-auth.com/database-adapters/prisma#prisma-schema</a>
 
-Copy the Prisma schema for Lucia to the Prisma schema of your project.
+:exclamation: Since you are going to to do authentication with a `username` and `password` you need to add a `username` field to your `User` model. :exclamation:
+
+The `username` field has to be of type `String` and be unique, `@unique`.
+
+:bulb: <a href="https://lucia-auth.com/guidebook/sign-in-with-username-and-password/sveltekit/#update-your-database" target="_blank">https://lucia-auth.com/guidebook/sign-in-with-username-and-password/sveltekit/#update-your-database</a>
+
+:bulb: <a href="https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#unique" target="_blank">https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#unique</a>
+
+<a href="https://en.wikipedia.org/wiki/Basic_access_authentication" target="_blank">https://en.wikipedia.org/wiki/Basic_access_authentication</a>
+
+<a href="https://www.loginradius.com/blog/identity/best-practices-username-password-authentication/" target="_blank">https://www.loginradius.com/blog/identity/best-practices-username-password-authentication/</a>
+
+In this Prisma schme the `User` model has a `username` field.
 
 **prisma/schema.prisma**
 
@@ -513,6 +525,7 @@ datasource db {
 
 model User {
   id           String    @id @unique
+  username     String    @unique
   auth_session Session[]
   key          Key[]
 }
@@ -571,26 +584,17 @@ Datasource "db": SQLite database "dev.db" at "file:./dev.db"
 
 SQLite database dev.db created at file:./dev.db
 
-Applying migration `20231025133811_init`
+Applying migration `20231025145352_init`
 
 The following migration(s) have been created and applied from new schema changes:
 
 migrations/
-  └─ 20231025133811_init/
+  └─ 20231025145352_init/
     └─ migration.sql
 
 Your database is now in sync with your schema.
 
-Running generate... (Use --skip-generate to skip the generators)
-
-added 2 packages, and audited 222 packages in 4s
-
-45 packages are looking for funding
-  run `npm fund` for details
-
-found 0 vulnerabilities
-
-✔ Generated Prisma Client (v5.5.1) to ./node_modules/@prisma/client in 97ms
+✔ Generated Prisma Client (v5.5.1) to ./node_modules/@prisma/client in 109ms
 ```
 
 Now checkout the next branch.
