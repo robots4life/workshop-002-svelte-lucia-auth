@@ -603,6 +603,8 @@ It is common practice to create a Singleton of the Prisma client to use througho
 
 :bulb: <a href="https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/instantiate-prisma-client" target="_blank">https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/instantiate-prisma-client</a>
 
+In addition and during development you can examine various logs from Prisma.
+
 :bulb: <a href="https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/logging" target="_blank">https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/logging</a>
 
 <a href="https://refactoring.guru/design-patterns/singleton" target="_blank">https://refactoring.guru/design-patterns/singleton</a>
@@ -625,4 +627,155 @@ Now checkout the next branch.
 
 ```bash
 git checkout 004-setup-lucia
+```
+
+## 5. Setup Lucia
+
+You are going to use Lucia for authentication with username and password.
+
+<a href="https://lucia-auth.com/" target="_blank">https://lucia-auth.com/</a>
+
+### 5.1 Install Lucia and install Adapter Prisma for Lucia
+
+:bulb: <a href="https://lucia-auth.com/getting-started/sveltekit" target="_blank">https://lucia-auth.com/getting-started/sveltekit</a>
+
+```bash
+npm install lucia
+```
+
+:bulb: <a href="https://lucia-auth.com/database-adapters/prisma#installation" target="_blank">https://lucia-auth.com/database-adapters/prisma#installation</a>
+
+```bash
+npm install @lucia-auth/adapter-prisma
+```
+
+### 5.2 Initialize Lucia
+
+:bulb: <a href="https://lucia-auth.com/getting-started/sveltekit#initialize-lucia" target="_blank">https://lucia-auth.com/getting-started/sveltekit#initialize-lucia</a>
+
+Import `lucia()` from `lucia` and initialize it in its own module (file).
+
+Export `auth` and its type as `Auth`. Make sure to pass the `sveltekit()` middleware.
+
+Create a new folder `server` in the folder `src/lib`.
+
+Create a new file `lucia.ts` in the folder `src/lib/server`.
+
+We’ll expose the user’s `username` to the `User` object by defining `getUserAttributes`.
+
+For this you use the user attribute, `username`.
+
+:bulb: <a href="https://lucia-auth.com/basics/configuration#getuserattributes" target="_blank">https://lucia-auth.com/basics/configuration#getuserattributes</a>
+
+**src/lib/server/lucia.ts**
+
+```ts
+import { lucia } from 'lucia';
+import { sveltekit } from 'lucia/middleware';
+import { dev } from '$app/environment';
+import { prisma } from '@lucia-auth/adapter-prisma';
+import { db } from '$lib/server/prisma';
+
+export const auth = lucia({
+	env: dev ? 'DEV' : 'PROD',
+	middleware: sveltekit(),
+	adapter: prisma(db, {
+		user: 'user', // model User {}
+		key: 'key', // model Key {}
+		session: 'session' // model Session {}
+	}),
+	getUserAttributes: (data) => {
+		return {
+			username: data.username
+		};
+	}
+});
+
+export type Auth = typeof auth;
+```
+
+### 5.3. Setup Types for Lucia
+
+:bulb: <a href="https://lucia-auth.com/getting-started/sveltekit#set-up-types" target="_blank">https://lucia-auth.com/getting-started/sveltekit#set-up-types</a>
+
+In your `src/app.d.ts` file, declare a `Lucia` namespace. The import path for `Auth` is where you initialized `lucia()`.
+
+Set the type for the user attribute you added to the Lucia configuration, `username`.
+
+**src/app.d.ts**
+
+```ts
+// See https://kit.svelte.dev/docs/types#app
+// for information about these interfaces
+
+// https://lucia-auth.com/getting-started/sveltekit#set-up-types
+declare global {
+	namespace App {
+		// interface Error {}
+		interface Locals {
+			auth: import('lucia').AuthRequest;
+		}
+		// interface PageData {}
+		// interface Platform {}
+	}
+}
+
+/// <reference types="lucia" />
+declare global {
+	namespace Lucia {
+		type Auth = import('$lib/server/lucia').Auth;
+		type DatabaseUserAttributes = {
+			// required fields (i.e. id) should not be defined here
+			username: string;
+		};
+		type DatabaseSessionAttributes = Record<string, never>;
+	}
+}
+
+export {};
+```
+
+### 5.4 Setup Hooks to store `Auth.request()` on the `locals.auth` Object
+
+:bulb: <a href="https://lucia-auth.com/getting-started/sveltekit#set-up-hooks" target="_blank">https://lucia-auth.com/getting-started/sveltekit#set-up-hooks</a>
+
+**This is optional but highly recommended**.
+
+:bulb: <a href="https://kit.svelte.dev/docs/hooks#server-hooks-handle" target="_blank">https://kit.svelte.dev/docs/hooks#server-hooks-handle</a>
+
+Create a new `handle()` hook that stores `AuthRequest` on the `locals.auth` object.
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/authrequest" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/authrequest</a>
+
+`locals.auth` will store the `Auth.request()` methods `setSession()`, `validate()` and `validateBearerToken()`.
+
+Create a new file `hooks.server.ts` in the `src` folder.
+
+:exclamation: Note, there is no `+` in front of the file name **`hooks.server.ts`**. :exclamation:
+
+:bulb: <a href="https://kit.svelte.dev/docs/types#app-locals" target="_blank">https://kit.svelte.dev/docs/types#app-locals</a>
+
+Note that you can access the `locals` object where you now store the `auth` methods when creating the `hooks.server.ts` file.
+
+:bulb: <a href="https://kit.svelte.dev/docs/form-actions#loading-data" target="_blank">https://kit.svelte.dev/docs/form-actions#loading-data</a>
+
+To access the `locals` object in a `load` function of a page or in a default or named `form action` of a page you need to add it as parameter to the function.
+
+You will see an example of how this is done in just a moment.
+
+You can unpack properties from objects passed as a function parameter. These properties may then be accessed within the function body.
+
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#unpacking_properties_from_objects_passed_as_a_function_parameter" target="_blank">MDN reference -> Unpacking properties from objects passed as a function parameter</a>
+
+**src/hooks.server.ts**
+
+```ts
+import { auth } from '$lib/server/lucia';
+import type { Handle } from '@sveltejs/kit';
+
+export const handle: Handle = async ({ event, resolve }) => {
+	// you can pass `event` because you used the SvelteKit middleware
+	event.locals.auth = auth.handleRequest(event);
+	return await resolve(event);
+};
 ```
