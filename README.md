@@ -909,3 +909,129 @@ Use the Svelte `class` directive to trigger the `.error` class on the `form` pro
 	}
 </style>
 ```
+
+### 6.2 Add a new User to the Database
+
+After you have done a basic check with the received form values you can create a new user.
+
+Users can be created with `Auth.createUser()`.
+
+:bulb: <a href="https://lucia-auth.com/basics/users" target="_blank">https://lucia-auth.com/basics/users</a>
+
+This will create a new user, and, if `key` is defined, a new `key`.
+
+:bulb: <a href="https://lucia-auth.com/basics/keys" target="_blank">https://lucia-auth.com/basics/keys</a>
+
+Keys represent the relationship between a user and a reference to that user.
+
+While the user id is the primary way of identifying a user, there are other ways your app may reference a user during the authentication step such as by their `username`, `email`, or Github user id.
+
+These identifiers, be it from a user input or an external source, are provided by a **provider**, identified by a `providerId`.
+
+The unique id for that user within the **provider** is the `providerUserId`.
+
+The unique combination of the provider id and provider user id makes up a `key`.
+
+The `key` here defines the connection between the user and the provided unique `email` (`providerUserId`) when using the `email` & `password` authentication method (`providerId`).
+
+We’ll also store the password in the `key`.
+
+This `key` will be used to get the user and validate the password when logging them in.
+
+:bulb: <a href="https://lucia-auth.com/basics/users/#create-users" target="_blank">https://lucia-auth.com/basics/users/#create-users</a>
+
+```ts
+const user = await auth.createUser({
+	key: {
+		providerId: 'username', // auth method
+		providerUserId: username.toLowerCase(), // unique id when using "username" auth method
+		password // hashed by Lucia
+	},
+	attributes: {
+		username
+	}
+});
+```
+
+The form action so far has this code. By returning the `user` after `await auth.createUser()` we can see the created user on the signup page.
+
+:exclamation: Do not do this in production in a real application. This is done here for you to see the result fo creating a new user in the database. :exclamation:
+
+**src/routes/signup/+page.server.ts**
+
+```ts
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	console.log(new Date());
+	console.log('SIGNUP page : load function');
+};
+
+import type { Actions } from './$types';
+import { auth } from '$lib/server/lucia';
+import { fail } from '@sveltejs/kit';
+
+export const actions: Actions = {
+	default: async ({ request }) => {
+		const formData = await request.formData();
+		console.log('SIGNUP page : form action');
+		console.log(formData);
+
+		const username = formData.get('username');
+		const password = formData.get('password');
+		// basic check
+		if (typeof username !== 'string' || username.length < 4 || username.length > 32) {
+			return fail(400, {
+				message: 'Invalid username'
+			});
+		}
+		if (typeof password !== 'string' || password.length < 4 || password.length > 8) {
+			return fail(400, {
+				message: 'Invalid password'
+			});
+		}
+
+		try {
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#createuser
+			// 1. create a new user
+			const user = await auth.createUser({
+				key: {
+					providerId: 'username', // auth method
+					providerUserId: username.toLowerCase(), // unique id when using "username" auth method
+					password // hashed by Lucia
+				},
+				attributes: {
+					username
+				}
+			});
+
+			// let's return the created user back to the sign up page for now
+			return { user };
+		} catch (e) {
+			console.log(e);
+		}
+	}
+} satisfies Actions;
+```
+
+On the `signup` page you can now see the data for the created `user` returned to the page in the `form` property, the returned value from the server-side default form action.
+
+<img src="/static/Screenshot_20231026_151853.png">
+
+You can also see the created user in database with **Prisma Studio**.
+
+Start Prisma Studio.
+
+```bash
+npx prisma studio
+```
+
+:bulb: <a href="https://www.prisma.io/blog/prisma-studio-3rtf78dg99fe" target="_blank">https://www.prisma.io/blog/prisma-studio-3rtf78dg99fe</a>
+
+Open <a href="http://localhost:5555/" target="_blank">http://localhost:5555/</a> if it is not automatically opened in your browser after this command.
+
+<img src="/static/Screenshot_20231026_152400.png">
+
+Click on `User` to see the data for the user.
+
+<img src="/static/Screenshot_20231026_152512.png">

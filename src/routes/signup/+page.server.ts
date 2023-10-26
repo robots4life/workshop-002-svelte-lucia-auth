@@ -6,6 +6,7 @@ export const load: PageServerLoad = async () => {
 };
 
 import type { Actions } from './$types';
+import { auth } from '$lib/server/lucia';
 import { fail } from '@sveltejs/kit';
 
 export const actions: Actions = {
@@ -27,5 +28,25 @@ export const actions: Actions = {
 				message: 'Invalid password'
 			});
 		}
+
+		try {
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#createuser
+			// 1. create a new user
+			const user = await auth.createUser({
+				key: {
+					providerId: 'username', // auth method
+					providerUserId: username.toLowerCase(), // unique id when using "username" auth method
+					password // hashed by Lucia
+				},
+				attributes: {
+					username
+				}
+			});
+
+			// let's return the created user back to the sign up page for now
+			return { user };
+		} catch (e) {
+			console.log(e);
+		}
 	}
-};
+} satisfies Actions;
