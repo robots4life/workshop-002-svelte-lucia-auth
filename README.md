@@ -1041,3 +1041,154 @@ Now checkout the next branch.
 ```bash
 git checkout 006-create-user-session
 ```
+
+### 6.3 Create a User Session
+
+Sessions can be created with `Auth.createSession()` and can be stored as a cookie.
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/auth#createsession" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/auth#createsession</a>
+
+After successfully creating a user, we’ll create a new session with `Auth.createSession()` and store it as a cookie with `AuthRequest.setSession()`.
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession</a>
+
+```ts
+// https://lucia-auth.com/reference/lucia/interfaces/auth#createsession
+// 2. create a new session once the user is created
+const session = await auth.createSession({
+	userId: user.userId,
+	attributes: {}
+});
+
+// https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession
+// 3. store the session on the locals object and set session cookie
+locals.auth.setSession(session);
+```
+
+:exclamation: Remember when you setup `hooks.server.ts` and stored the `Auth.request()` methods on the `locals.auth` object ? :exclamation:
+
+:point_right: <a href="https://github.com/robots4life/workshop-002-svelte-lucia-auth/tree/005-signup-user#54-setup-hooks-to-store-authrequest-on-the-localsauth-object" target="_blank">5.4 Setup Hooks to store Auth.request() on the locals.auth Object</a>
+
+Note that you can access the `locals` object where you stored the `auth` methods when creating the `hooks.server.ts` file.
+
+:bulb: <a href="https://kit.svelte.dev/docs/form-actions#loading-data" target="_blank">https://kit.svelte.dev/docs/form-actions#loading-data</a>
+
+To access the `locals` object in a `load` function of a page or in a default or named `form action` of a page you need to add it as parameter to the function.
+
+You can unpack properties from objects passed as a function parameter. These properties may then be accessed within the function body.
+
+Here you see `locals` being added as a function parameter so that it can be accessed in the function body, in this case the `form action`.
+
+```ts
+default: async ({ request, locals }) => {..
+```
+
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#unpacking_properties_from_objects_passed_as_a_function_parameter" target="_blank">MDN reference -> Unpacking properties from objects passed as a function parameter</a>
+
+**src/routes/signup/+page.server.ts**
+
+```ts
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	console.log(new Date());
+	console.log('SIGNUP page : load function');
+};
+
+import type { Actions } from './$types';
+import { auth } from '$lib/server/lucia';
+import { fail } from '@sveltejs/kit';
+
+export const actions: Actions = {
+	default: async ({ request, locals }) => {
+		const formData = await request.formData();
+		console.log('SIGNUP page : form action');
+		console.log(formData);
+
+		const username = formData.get('username');
+		const password = formData.get('password');
+		// basic check
+		if (typeof username !== 'string' || username.length < 4 || username.length > 32) {
+			return fail(400, {
+				message: 'Invalid username'
+			});
+		}
+		if (typeof password !== 'string' || password.length < 4 || password.length > 8) {
+			return fail(400, {
+				message: 'Invalid password'
+			});
+		}
+
+		try {
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#createuser
+			// 1. create a new user
+			const user = await auth.createUser({
+				key: {
+					providerId: 'username', // auth method
+					providerUserId: username.toLowerCase(), // unique id when using "username" auth method
+					password // hashed by Lucia
+				},
+				attributes: {
+					username
+				}
+			});
+
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#createsession
+			// 2. create a new session once the user is created
+			const session = await auth.createSession({
+				userId: user.userId,
+				attributes: {}
+			});
+
+			// https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession
+			// 3. store the session on the locals object and set session cookie
+			locals.auth.setSession(session);
+
+			// let's return the created user back to the sign up page for now
+			return { user };
+		} catch (e) {
+			console.log(e);
+		}
+	}
+} satisfies Actions;
+```
+
+Start **Prisma Studio** if it is not running already.
+
+```bash
+npx prisma studio
+```
+
+Go to your Prisma Studio on <a href="http://localhost:5555/" target="_blank">http://localhost:5555/</a>, select the `User` row and hit `Delete 1 record` to delete the previously created user.
+
+If you have any other users then delete all those as well so that you have no records in the database.
+
+Go to the `signup` page and now let's create a new user and a session stored as a cookie for that new user, submit the form.
+
+Again, the SvelteKit default `form action` returns the newly created `user` object to the page.
+
+You should now see a new user and a new session.
+
+<img src="/static/Screenshot_20231026_155513.png">
+
+Click on `User` to see the created user and click on `Session` to the current session for that user.
+
+The created `User`.
+
+<img src="/static/Screenshot_20231026_155613.png">
+
+The created `Session`.
+
+<img src="/static/Screenshot_20231026_155653.png">
+
+Now let's have a look at the created session cookie in the browser development tools.
+
+<img src="/static/Screenshot_20231026_155759.png">
+
+Well done, you just created a new user and a session for that new user that is stored as a cookie, all this with a SvelteKit form default action, using Lucia with Prisma and Sqlite. :tada:
+
+Now checkout the next branch.
+
+```bash
+git checkout 007-handle-errors
+```
