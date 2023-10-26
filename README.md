@@ -1429,3 +1429,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 // then the page reload triggers the load function to run..
 ```
+
+Now checkout the next branch.
+
+```bash
+git checkout 009-protect-profile-page
+```
