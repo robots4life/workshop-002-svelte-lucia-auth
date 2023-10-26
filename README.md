@@ -1576,3 +1576,9 @@ export const actions: Actions = {
 	}
 };
 ```
+
+Now checkout the next branch.
+
+```bash
+git checkout 011-authenticate-user
+```
