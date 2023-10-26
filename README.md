@@ -1035,3 +1035,9 @@ Open <a href="http://localhost:5555/" target="_blank">http://localhost:5555/</a>
 Click on `User` to see the data for the user.
 
 <img src="/static/Screenshot_20231026_152512.png">
+
+Now checkout the next branch.
+
+```bash
+git checkout 006-create-user-session
+```
