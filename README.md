@@ -1582,3 +1582,117 @@ Now checkout the next branch.
 ```bash
 git checkout 011-authenticate-user
 ```
+
+### 10.2 Authenticate an Existing User
+
+Similar to the default `form action` for the `signup` page you have a default `form action` for the `login` page in a `+page.server.ts` file.
+
+Now on the `login` page the user supplies an `username` and a `password` value.
+
+:bulb: It is up to you to find a `user` in your database with those values.
+
+:bulb: This is done with a `Key`.
+
+**Keys represent the relationship between a user and a reference to that user.**
+
+:bulb: <a href="https://lucia-auth.com/basics/keys/" target="_blank">https://lucia-auth.com/basics/keys/</a>
+
+`useKey()` accepts three parameters,
+
+- the `providerId`, that is the "mechanism of authentication", so `username` or `email`, or `github` <a href="https://lucia-auth.com/basics/keys/#oauth" target="_blank">https://lucia-auth.com/basics/keys/#oauth</a>,
+- the `providerUserId`, that is the `username` or `email address`,
+- and as third parameter the `password`. `useKey()` checks if there is a user with such credentials in the database and returns a `key` if the `user` is found.
+
+While the user id is the primary way of identifying a user, there are other ways your app may reference a user during the authentication step such as by their `username`, `email`, or GitHub user id.
+
+These identifiers, be it from a user input or an external source, are provided by a provider, identified by a provider id.
+
+The unique id for that user within the provider is the provider user id.
+
+The unique combination of the provider id and provider user id makes up a key.
+
+```ts
+const useKey: (providerId: string, providerUserId: string, password: string | null) => Promise<Key>;
+```
+
+:bulb: <a href="https://lucia-auth.com/basics/keys/#email--password" target="_blank">https://lucia-auth.com/basics/keys/#email--password</a>
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/auth/#usekey" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/auth/#usekey</a>
+
+:bulb: <a href="https://lucia-auth.com/guidebook/sign-in-with-username-and-password/sveltekit/#authenticate-users" target="_blank">https://lucia-auth.com/guidebook/sign-in-with-username-and-password/sveltekit/#authenticate-users</a>
+
+```ts
+// https://lucia-auth.com/reference/lucia/interfaces/auth#usekey
+// find user by key and check if the password is defined and check if the password is correct/valid
+const key = await auth.useKey('username', username.toLowerCase(), password);
+```
+
+**src/routes/login/+page.server.ts**
+
+```ts
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	console.log(new Date());
+	console.log('LOGIN page : load function');
+};
+
+import type { Actions } from './$types';
+import { fail } from '@sveltejs/kit';
+import { auth } from '$lib/server/lucia';
+
+export const actions: Actions = {
+	default: async ({ request }) => {
+		const formData = await request.formData();
+		console.log('LOGIN page : form action');
+		console.log(formData);
+
+		const username = formData.get('username');
+		const password = formData.get('password');
+
+		// basic check
+		if (typeof username !== 'string' || username.length < 4 || username.length > 32) {
+			return fail(400, {
+				message: 'Invalid username'
+			});
+		}
+		if (typeof password !== 'string' || password.length < 4 || password.length > 8) {
+			return fail(400, {
+				message: 'Invalid password'
+			});
+		}
+
+		try {
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#usekey
+			// 1. find user by key and check if the password is defined and check if the password is correct/valid
+			const key = await auth.useKey('username', username.toLowerCase(), password);
+			console.log('LOGIN page - form action : key');
+			console.log(key);
+		} catch (e) {
+			console.log(e);
+		}
+	}
+};
+```
+
+Go to the `login` page and submit the form.
+
+Check your terminal.
+
+:bulb: If the form with the correct `username` and `password` is submitted you can see the `key` that you log out.
+
+```bash
+LOGIN page - form action : key
+{
+  providerId: 'username',
+  providerUserId: 'cyber.punk.9731',
+  userId: 'yf0ntwu2ik57dvq',
+  passwordDefined: true
+}
+```
+
+Now checkout the next branch.
+
+```bash
+git checkout 012-create-user-session
+```

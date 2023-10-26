@@ -7,6 +7,7 @@ export const load: PageServerLoad = async () => {
 
 import type { Actions } from './$types';
 import { fail } from '@sveltejs/kit';
+import { auth } from '$lib/server/lucia';
 
 export const actions: Actions = {
 	default: async ({ request }) => {
@@ -16,6 +17,7 @@ export const actions: Actions = {
 
 		const username = formData.get('username');
 		const password = formData.get('password');
+
 		// basic check
 		if (typeof username !== 'string' || username.length < 4 || username.length > 32) {
 			return fail(400, {
@@ -26,6 +28,16 @@ export const actions: Actions = {
 			return fail(400, {
 				message: 'Invalid password'
 			});
+		}
+
+		try {
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#usekey
+			// 1. find user by key and check if the password is defined and check if the password is correct/valid
+			const key = await auth.useKey('username', username.toLowerCase(), password);
+			console.log('LOGIN page - form action : key');
+			console.log(key);
+		} catch (e) {
+			console.log(e);
 		}
 	}
 };
