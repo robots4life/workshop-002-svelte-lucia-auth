@@ -1520,3 +1520,9 @@ Last not least, show the newly created user some private and user specific data 
 <pre>{JSON.stringify(data, null, 2)}</pre>
 {/if}
 ```
+
+Now checkout the next branch.
+
+```bash
+git checkout 010-login-user
+```
