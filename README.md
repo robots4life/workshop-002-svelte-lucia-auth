@@ -1192,3 +1192,144 @@ Now checkout the next branch.
 ```bash
 git checkout 007-handle-errors
 ```
+
+### 6.4 Handle Errors
+
+Lucia throws 2 types of errors: `LuciaError` and database errors from the database driver or ORM you’re using.
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/modules/main#luciaerror" target="_blank">https://lucia-auth.com/reference/lucia/modules/main#luciaerror</a>
+
+Most database related errors, such as connection failure, duplicate values, and foreign key constraint errors, are thrown as is. These need to be handled as if you were using just the driver/ORM.
+
+Find details about how Prisma does error handling.
+
+:bulb: <a href="https://www.prisma.io/docs/concepts/components/prisma-client/handling-exceptions-and-errors" target="_blank">https://www.prisma.io/docs/concepts/components/prisma-client/handling-exceptions-and-errors</a>
+
+:bulb: <a href="https://www.prisma.io/docs/reference/api-reference/error-reference" target="_blank">https://www.prisma.io/docs/reference/api-reference/error-reference</a>
+
+:bulb: <a href="https://www.prisma.io/docs/reference/api-reference/error-reference#error-codes" target="_blank">https://www.prisma.io/docs/reference/api-reference/error-reference#error-codes</a>
+
+:bulb: <a href="https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/error-formatting" target="_blank">https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/error-formatting</a>
+
+Let's try and log a `PrismaClientKnownRequestError` with Prisma.
+
+:bulb: <a href="https://www.prisma.io/docs/reference/api-reference/error-reference#prismaclientknownrequesterror" target="_blank">https://www.prisma.io/docs/reference/api-reference/error-reference#prismaclientknownrequesterror</a>
+
+:bulb: <a href="https://www.prisma.io/docs/reference/api-reference/error-reference#p2002" target="_blank">https://www.prisma.io/docs/reference/api-reference/error-reference#p2002</a>
+
+**src/lib/server/prisma.ts**
+
+```ts
+import { Prisma, PrismaClient } from '@prisma/client';
+
+export const db = new PrismaClient({
+	log: ['query']
+});
+
+export const PrismaError = Prisma;
+```
+
+**src/routes/signup/+page.server.ts**
+
+```ts
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	console.log(new Date());
+	console.log('SIGNUP page : load function');
+};
+
+import type { Actions } from './$types';
+import { auth } from '$lib/server/lucia';
+import { fail } from '@sveltejs/kit';
+import { LuciaError } from 'lucia';
+import { PrismaError } from '$lib/server/prisma';
+
+export const actions: Actions = {
+	default: async ({ request, locals }) => {
+		const formData = await request.formData();
+		console.log('SIGNUP page : form action');
+		console.log(formData);
+
+		const username = formData.get('username');
+		const password = formData.get('password');
+		// basic check
+		if (typeof username !== 'string' || username.length < 4 || username.length > 32) {
+			return fail(400, {
+				message: 'Invalid username'
+			});
+		}
+		if (typeof password !== 'string' || password.length < 4 || password.length > 8) {
+			return fail(400, {
+				message: 'Invalid password'
+			});
+		}
+
+		try {
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#createuser
+			// 1. create a new user
+			const user = await auth.createUser({
+				key: {
+					providerId: 'username', // auth method
+					providerUserId: username.toLowerCase(), // unique id when using "username" auth method
+					password // hashed by Lucia
+				},
+				attributes: {
+					username
+				}
+			});
+
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#createsession
+			// 2. create a new session once the user is created
+			const session = await auth.createSession({
+				userId: user.userId,
+				attributes: {}
+			});
+
+			// https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession
+			// 3. store the session on the locals object and set session cookie
+			locals.auth.setSession(session);
+
+			// let's return the created user back to the sign up page for now
+			return { user };
+		} catch (e) {
+			//
+			// Prisma error
+			// https://www.prisma.io/docs/reference/api-reference/error-reference#prismaclientknownrequesterror
+			if (e instanceof PrismaError.PrismaClientKnownRequestError) {
+				//
+				// https://www.prisma.io/docs/reference/api-reference/error-reference#p2002
+				// The .code property can be accessed in a type-safe manner
+				if (e.code === 'P2002') {
+					console.log(`Unique constraint failed on the ${e?.meta?.target}`);
+					console.log('\n');
+					console.log('e : ' + e);
+					console.log('e.meta : ' + e?.meta);
+					console.log('e.meta.target : ' + e?.meta?.target);
+
+					// return the error to the page with SvelteKit's fail function
+					return fail(400, { message: `Unique constraint failed on the field ${e?.meta?.target}` });
+				}
+			}
+			// Lucia error
+			// https://lucia-auth.com/reference/lucia/modules/main#luciaerror
+			if (e instanceof LuciaError) {
+				// Lucia error
+				return fail(400, { message: String(e) });
+			}
+			// throw any other error that is not caught by above conditions
+			return fail(400, { message: String(e) });
+		}
+	}
+} satisfies Actions;
+```
+
+If you try to sign up with an existing user you should see an error message be displayed on the `signup` page.
+
+<img src="/static/Screenshot_20231026_162405.png">
+
+Now checkout the next branch.
+
+```bash
+git checkout 008-redirect-authenticated-user
+```

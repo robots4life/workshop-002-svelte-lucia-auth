@@ -8,6 +8,8 @@ export const load: PageServerLoad = async () => {
 import type { Actions } from './$types';
 import { auth } from '$lib/server/lucia';
 import { fail } from '@sveltejs/kit';
+import { LuciaError } from 'lucia';
+import { PrismaError } from '$lib/server/prisma';
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
@@ -57,7 +59,32 @@ export const actions: Actions = {
 			// let's return the created user back to the sign up page for now
 			return { user };
 		} catch (e) {
-			console.log(e);
+			//
+			// Prisma error
+			// https://www.prisma.io/docs/reference/api-reference/error-reference#prismaclientknownrequesterror
+			if (e instanceof PrismaError.PrismaClientKnownRequestError) {
+				//
+				// https://www.prisma.io/docs/reference/api-reference/error-reference#p2002
+				// The .code property can be accessed in a type-safe manner
+				if (e.code === 'P2002') {
+					console.log(`Unique constraint failed on the ${e?.meta?.target}`);
+					console.log('\n');
+					console.log('e : ' + e);
+					console.log('e.meta : ' + e?.meta);
+					console.log('e.meta.target : ' + e?.meta?.target);
+
+					// return the error to the page with SvelteKit's fail function
+					return fail(400, { message: `Unique constraint failed on the field ${e?.meta?.target}` });
+				}
+			}
+			// Lucia error
+			// https://lucia-auth.com/reference/lucia/modules/main#luciaerror
+			if (e instanceof LuciaError) {
+				// Lucia error
+				return fail(400, { message: String(e) });
+			}
+			// throw any other error that is not caught by above conditions
+			return fail(400, { message: String(e) });
 		}
 	}
 } satisfies Actions;
