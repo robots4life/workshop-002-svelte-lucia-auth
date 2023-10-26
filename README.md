@@ -1333,3 +1333,99 @@ Now checkout the next branch.
 ```bash
 git checkout 008-redirect-authenticated-user
 ```
+
+## 7. Redirect an Authenticated User
+
+After a new user has successfully registered a new `username` on the `signup` page it makes sense to `redirect` that user to another page of the app instead of staying on the `signup` page.
+
+For example we could redirect the new user to their personal `profile` page. Also, if a user tries to go back to the `signup` page we should redirect them to their `profile` page instead.
+
+:bulb: <a href="https://lucia-auth.com/guidebook/sign-in-with-username-and-password/sveltekit#redirect-authenticated-users" target="_blank">https://lucia-auth.com/guidebook/sign-in-with-username-and-password/sveltekit#redirect-authenticated-users</a>
+
+In the previous step we did create a new user and a session for that user stored in a cookie. We will use the session stored in that cookie to authenticate the user on every new request to the app.
+
+You can validate requests by creating a new `AuthRequest` instance with `Auth.handleRequest()`, which is stored in `locals.auth ` and calling `AuthRequest.validate()`.
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/authrequest" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/authrequest</a>
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/auth#handlerequest" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/auth#handlerequest</a>
+
+You just created a new session for the newly created user and set a session cookie for them on the `local` object under the `auth` property.
+
+This is where the session is set in the created cookie.
+
+```ts
+// https://lucia-auth.com/reference/lucia/interfaces/auth#createsession
+// 2. create a new session once the user is created
+const session = await auth.createSession({
+	userId: user.userId,
+	attributes: {}
+});
+
+// https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession
+// 3. store the session on the locals object and set session cookie
+locals.auth.setSession(session);
+```
+
+Since we are on the `signup` page and submit a form the page reloads per web standards.
+
+<a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Sending_and_retrieving_form_data" target="_blank">MDN reference -> Sending and retrieving form data</a>
+
+So once the page reloads and while we still have the session cookie stored in the app we can define a SvelteKit `load` function that has access to the `locals` object. Remember, on this `locals` object we added the `auth` property with this code.
+
+```ts
+// https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession
+// 3. store the session on the locals object and set session cookie
+locals.auth.setSession(session);
+```
+
+The `locals` object can be accessed in hooks, handle, and handleError, server-only load functions, and `+server.js` files.
+
+It is important to understand that this `locals` object can be accessed by the mentioned functions, all of them being executed in a server-side context.
+
+:bulb: <a href="https://kit.svelte.dev/docs/form-actions#loading-data" target="_blank">https://kit.svelte.dev/docs/form-actions#loading-data</a>
+
+**After a form action runs on a page, the page will be re-rendered (unless a redirect or an unexpected error occurs), with the action's return value available to the page as the form property.**
+
+**This means that your page's load functions will run after the action completes.**
+
+Since you do have a `load` function for the `signup` page **YOU WANT THE LOAD FUNCTION TO RUN** after the default form action.
+
+:bulb: <a href="https://kit.svelte.dev/docs/types#app-locals" target="_blank">https://kit.svelte.dev/docs/types#app-locals</a>
+
+:bulb: <a href="https://kit.svelte.dev/docs/hooks#server-hooks-handle" target="_blank">https://kit.svelte.dev/docs/hooks#server-hooks-handle</a>
+
+Let's define a `load` function on the `signup` page and call the `validate` method on the `auth` property of the `locals` object.
+
+The `validate` method returns a `Session` if the user is authenticated or `null` if not.
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/authrequest#validate" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/authrequest#validate</a>
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces#session" target="_blank">https://ucia-auth.com/reference/lucia/interfaces#session</a>
+
+**src/routes/signup/+page.server.ts**
+
+```ts
+import type { PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
+
+export const load: PageServerLoad = async ({ locals }) => {
+	console.log(new Date());
+	console.log('SIGNUP page : load function');
+
+	// call the validate() method to check for a valid session
+	// https://lucia-auth.com/reference/lucia/interfaces/authrequest#validate
+	const session = await locals.auth.validate();
+
+	if (session) {
+		// we redirect the user to the profile page if the session is valid
+		throw redirect(302, '/profile');
+	}
+};
+
+// default form action code follows..
+
+// when you submit the form the form action runs first..
+
+// then the page reload triggers the load function to run..
+```
