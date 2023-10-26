@@ -66,8 +66,9 @@ export const actions: Actions = {
 			// 3. store the session on the locals object and set session cookie
 			locals.auth.setSession(session);
 
-			// let's return the created user back to the sign up page for now
-			return { user };
+			// let's log the created user
+			console.log('SIGNUP page - form action : new user');
+			console.log(user);
 		} catch (e) {
 			//
 			// Prisma error

@@ -1435,3 +1435,88 @@ Now checkout the next branch.
 ```bash
 git checkout 009-protect-profile-page
 ```
+
+## 8. Protect Profile Page
+
+:exclamation: So far the `profile` page can be :scream: **accessed publicly** :scream: by every user of your app. :exclamation:
+
+Let's change that.
+
+You know that once a new user signs up there is a session being created. You can use this session to protect the `profile` page.
+
+```ts
+import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ locals }) => {
+	console.log(new Date());
+	console.log('PROFILE page : load function');
+
+	// call the validate() method to check for a valid session
+	// https://lucia-auth.com/reference/lucia/interfaces/authrequest#validate
+	const session = await locals.auth.validate();
+
+	if (!session) {
+		// we redirect the user to the root/index/home page if the session is not valid
+		throw redirect(302, '/');
+	}
+
+	console.log('PROFILE page : session ');
+	console.log(session);
+
+	if (session) {
+		return {
+			username: session.user.username,
+			userId: session.user.userId,
+			sessionId: session.sessionId,
+			activePeriodExpiresAt: session.activePeriodExpiresAt,
+			state: session.state
+		};
+	}
+};
+```
+
+Since you now redirect a newly signed up user from the `signup` page to the `profile` page you can either omit returning the created user to the `signup` page or just log the data.
+
+**src/routes/signup/+page.server.ts**
+
+Before
+
+```ts
+// let's return the created user back to the sign up page for now
+return { user };
+```
+
+After
+
+```ts
+console.log('SIGNUP page - form action : new user');
+console.log(user);
+```
+
+Last not least, show the newly created user some private and user specific data on their `profile` page.
+
+:zap: :exclamation: This page is now private, cannot be accessed by public users, and is only visible after a successful signup of a new user and a successful creation of a new session. :exclamation: :zap:
+
+**src/routes/profile/+page.svelte**
+
+```html
+<script lang="ts">
+	import type { PageData } from './$types';
+	export let data: PageData;
+	console.log(data);
+</script>
+
+<a href="/">Home</a>
+<hr />
+
+<h1>Profile</h1>
+<hr />
+
+<h2>Account Details</h2>
+<h3>Protected Route - User Specific Information</h3>
+
+{#if Object.keys(data).length !== 0}
+<pre>{JSON.stringify(data, null, 2)}</pre>
+{/if}
+```
