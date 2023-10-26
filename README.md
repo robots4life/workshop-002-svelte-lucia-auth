@@ -1526,3 +1526,53 @@ Now checkout the next branch.
 ```bash
 git checkout 010-login-user
 ```
+
+## 10. Login User
+
+In the next steps you are going to add the code needed to **authenticate an existing user** against their details in the database.
+
+All of this is done server-side in the **src/routes/login/+page.server.ts** file.
+
+### 10.1 Do a basic check with the received form values
+
+If the request couldn't be processed because of invalid data, you can return validation errors - along with the previously submitted form values - back to the user, so that they can try again.
+
+The `fail` function lets you return an HTTP status code (typically `400` or `422`, in the case of validation errors) along with the data.
+
+:bulb: <a href="https://kit.svelte.dev/docs/form-actions#anatomy-of-an-action-validation-errors" target="_blank">https://kit.svelte.dev/docs/form-actions#anatomy-of-an-action-validation-errors</a>
+
+**src/routes/login/+page.server.ts**
+
+```ts
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	console.log(new Date());
+	console.log('LOGIN page : load function');
+};
+
+import type { Actions } from './$types';
+import { fail } from '@sveltejs/kit';
+
+export const actions: Actions = {
+	default: async ({ request }) => {
+		const formData = await request.formData();
+		console.log('LOGIN page : form action');
+		console.log(formData);
+
+		const username = formData.get('username');
+		const password = formData.get('password');
+		// basic check
+		if (typeof username !== 'string' || username.length < 4 || username.length > 32) {
+			return fail(400, {
+				message: 'Invalid username'
+			});
+		}
+		if (typeof password !== 'string' || password.length < 4 || password.length > 8) {
+			return fail(400, {
+				message: 'Invalid password'
+			});
+		}
+	}
+};
+```
