@@ -1527,13 +1527,13 @@ Now checkout the next branch.
 git checkout 010-login-user
 ```
 
-## 10. Login User
+## 9. Login User
 
 In the next steps you are going to add the code needed to **authenticate an existing user** against their details in the database.
 
 All of this is done server-side in the **src/routes/login/+page.server.ts** file.
 
-### 10.1 Do a basic check with the received form values
+### 9.1 Do a basic check with the received form values
 
 If the request couldn't be processed because of invalid data, you can return validation errors - along with the previously submitted form values - back to the user, so that they can try again.
 
