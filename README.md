@@ -2252,3 +2252,7 @@ export const actions: Actions = {
 	}
 } satisfies Actions;
 ```
+
+Well done, you have come a long way and learned quite a bit.
+
+Sit back, or stand up and stretch out, have a break, and enjoy what you have accomplished. :tada: :rocket:
