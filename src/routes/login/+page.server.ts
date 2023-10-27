@@ -1,8 +1,18 @@
 import type { PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
 	console.log(new Date());
 	console.log('LOGIN page : load function');
+
+	// call the validate() method to check for a valid session
+	// https://lucia-auth.com/reference/lucia/interfaces/authrequest#validate
+	const session = await locals.auth.validate();
+
+	if (session) {
+		// we redirect the user to the profile page if the session is valid
+		throw redirect(302, '/profile');
+	}
 };
 
 import type { Actions } from './$types';
