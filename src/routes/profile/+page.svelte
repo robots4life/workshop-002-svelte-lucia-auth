@@ -16,3 +16,18 @@
 {#if Object.keys(data).length !== 0}
 	<pre>{JSON.stringify(data, null, 2)}</pre>
 {/if}
+
+<form id="log_out" method="POST">
+	<button form="log_out" type="submit">Log Out</button>
+</form>
+
+<style>
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	button {
+		border-radius: 10px;
+	}
+</style>

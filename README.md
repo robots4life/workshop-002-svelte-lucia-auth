@@ -2167,3 +2167,88 @@ Now checkout the next branch.
 ```bash
 git checkout 015-logout-user
 ```
+
+## 12. Logout User
+
+Last not least, it is time to also log out an authenticated user. This could best be done on the `profile` page.
+
+Add a form that will be handled by a default form action. There is no value that needs to be provided from the user.
+
+Like you did before, handle the form submit with a default form action on the `profile` page.
+
+To log out the user you need to..
+
+1. check if there is a session, if there is no session return a `401` error
+   :bulb: <a href="https://en.wikipedia.org/wiki/HTTP_403" target="_blank">https://en.wikipedia.org/wiki/HTTP_403</a>
+
+2. if there is a session invalidate the user's session
+   :bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/auth/#invalidatesession" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/auth/#invalidatesession</a>
+
+3. remove the cookie with the session
+   :bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/authrequest/#setsession" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/authrequest/#setsession</a>
+
+4. :exclamation: redirect the user to the Home page of the app, or any other page that is NOT the `profile` page :exclamation:
+
+```ts
+import type { PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
+
+export const load: PageServerLoad = async ({ locals }) => {
+	console.log(new Date());
+	console.log('PROFILE page : load function');
+
+	// call the validate() method to check for a valid session
+	// https://lucia-auth.com/reference/lucia/interfaces/authrequest#validate
+	const session = await locals.auth.validate();
+
+	if (!session) {
+		// we redirect the user to the root/index/home page if the session is not valid
+		throw redirect(302, '/');
+	}
+
+	console.log('PROFILE page : session ');
+	console.log(session);
+
+	if (session) {
+		return {
+			username: session.user.username,
+			userId: session.user.userId,
+			sessionId: session.sessionId,
+			activePeriodExpiresAt: session.activePeriodExpiresAt,
+			state: session.state
+		};
+	}
+};
+
+import type { Actions } from './$types';
+import { fail } from '@sveltejs/kit';
+import { auth } from '$lib/server/lucia';
+
+export const actions: Actions = {
+	default: async ({ locals }) => {
+		const session = await locals.auth.validate();
+
+		if (!session) {
+			// 1. check if there is a session, if there is NO session return a 401 error
+			// https://en.wikipedia.org/wiki/HTTP_403
+			return fail(401);
+		}
+
+		if (session) {
+			// 2. if there is a session invalidate the user's session
+			// https://lucia-auth.com/reference/lucia/interfaces/auth/#invalidatesession
+			await auth.invalidateSession(session.sessionId);
+
+			//3. remove the cookie with the session
+			// https://lucia-auth.com/reference/lucia/interfaces/authrequest/#setsession
+			locals.auth.setSession(null);
+
+			// 4. redirect the user to the root/index/hom page of your app
+			throw redirect(302, '/');
+		}
+
+		// redirect ALL other cases to the root/index/home page
+		throw redirect(302, '/');
+	}
+} satisfies Actions;
+```
