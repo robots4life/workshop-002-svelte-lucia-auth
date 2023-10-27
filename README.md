@@ -1696,3 +1696,162 @@ Now checkout the next branch.
 ```bash
 git checkout 012-create-user-session
 ```
+
+### 10.3 Create a User Session
+
+Sessions can be created with `Auth.createSession()` and can be stored as a cookie.
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/auth#createsession" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/auth#createsession</a>
+
+After successfully **authenticating** a user, we’ll create a new session with `Auth.createSession()` and store it as a cookie with `AuthRequest.setSession()`.
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession" target="_blank">https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession</a>
+
+```ts
+// https://lucia-auth.com/reference/lucia/interfaces/auth#createsession
+// 2. create a new session once the user is created
+const session = await auth.createSession({
+	userId: key.userId,
+	attributes: {}
+});
+
+// https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession
+// 3. store the session on the locals object and set session cookie
+locals.auth.setSession(session);
+```
+
+:exclamation: Remember when you setup `hooks.server.ts` and stored the `Auth.request()` methods on the `locals.auth` object ? :exclamation:
+
+:point_right: <a href="https://github.com/robots4life/workshop-002-svelte-lucia-auth/tree/005-signup-user#54-setup-hooks-to-store-authrequest-on-the-localsauth-object" target="_blank">5.4 Setup Hooks to store Auth.request() on the locals.auth Object</a>
+
+Note that you can access the `locals` object where you stored the `auth` methods when creating the `hooks.server.ts` file.
+
+:bulb: <a href="https://kit.svelte.dev/docs/form-actions#loading-data" target="_blank">https://kit.svelte.dev/docs/form-actions#loading-data</a>
+
+To access the `locals` object in a `load` function of a page or in a default or named `form action` of a page you need to add it as parameter to the function.
+
+You can unpack properties from objects passed as a function parameter. These properties may then be accessed within the function body.
+
+Here you see `locals` being added as a function parameter so that it can be accessed in the function body, in this case the `form action`.
+
+```ts
+default: async ({ request, locals }) => {..
+```
+
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#unpacking_properties_from_objects_passed_as_a_function_parameter" target="_blank">MDN reference -> Unpacking properties from objects passed as a function parameter</a>
+
+**src/routes/login/+page.server.ts**
+
+```ts
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	console.log(new Date());
+	console.log('LOGIN page : load function');
+};
+
+import type { Actions } from './$types';
+import { fail } from '@sveltejs/kit';
+import { auth } from '$lib/server/lucia';
+
+export const actions: Actions = {
+	default: async ({ request, locals }) => {
+		const formData = await request.formData();
+		console.log('LOGIN page : form action');
+		console.log(formData);
+
+		const username = formData.get('username');
+		const password = formData.get('password');
+
+		// basic check
+		if (typeof username !== 'string' || username.length < 4 || username.length > 32) {
+			return fail(400, {
+				message: 'Invalid username'
+			});
+		}
+		if (typeof password !== 'string' || password.length < 4 || password.length > 8) {
+			return fail(400, {
+				message: 'Invalid password'
+			});
+		}
+
+		try {
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#usekey
+			// 1. find user by key and check if the password is defined and check if the password is correct/valid
+			const key = await auth.useKey('username', username.toLowerCase(), password);
+			console.log('LOGIN page - form action : key');
+			console.log(key);
+
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#createsession
+			// 2. create a new session once the user is created
+			const session = await auth.createSession({
+				userId: key.userId,
+				attributes: {}
+			});
+
+			// https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession
+			// 3. store the session on the locals object and set session cookie
+			locals.auth.setSession(session);
+		} catch (e) {
+			console.log(e);
+		}
+	}
+};
+```
+
+Let's have a look at the terminal and observe the flow of data through your app.
+
+:bulb: On the `login` page..
+
+1. the load function runs
+2. then you submit the form
+3. then the form action runs
+4. Prisma deals with the query
+5. then Lucia finds the `key`
+6. then Lucia sets the `session`
+7. Prisma deals with the query
+8. last not least, the load function runs again as the page reloads after a form submit
+9. you have an authenticated `user` and their `session` in your app
+
+```bash
+> workshop-002-svelte-lucia-auth@0.0.1 dev
+> vite dev
+
+
+
+  VITE v4.5.0  ready in 938 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h to show help
+2023-10-27T06:18:07.136Z
+LOGIN page : load function
+LOGIN page : form action
+FormData {
+  [Symbol(state)]: [
+    { name: 'username', value: 'cyber.punk.9731' },
+    { name: 'password', value: '12345678' }
+  ]
+}
+prisma:query SELECT `main`.`Key`.`id`, `main`.`Key`.`hashed_password`, `main`.`Key`.`user_id` FROM `main`.`Key` WHERE (`main`.`Key`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+LOGIN page - form action : key
+{
+  providerId: 'username',
+  providerUserId: 'cyber.punk.9731',
+  userId: 'yf0ntwu2ik57dvq',
+  passwordDefined: true
+}
+prisma:query BEGIN
+prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`username` FROM `main`.`User` WHERE (`main`.`User`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Session` (`id`, `user_id`, `active_expires`, `idle_expires`) VALUES (?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Session`.`id`, `main`.`Session`.`user_id`, `main`.`Session`.`active_expires`, `main`.`Session`.`idle_expires` FROM `main`.`Session` WHERE `main`.`Session`.`id` = ? LIMIT ? OFFSET ?
+2023-10-27T06:18:10.794Z
+LOGIN page : load function
+prisma:query COMMIT
+```
+
+Now checkout the next branch.
+
+```bash
+git checkout 013-handle-errors
+```

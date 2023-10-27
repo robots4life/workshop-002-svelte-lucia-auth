@@ -10,7 +10,7 @@ import { fail } from '@sveltejs/kit';
 import { auth } from '$lib/server/lucia';
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, locals }) => {
 		const formData = await request.formData();
 		console.log('LOGIN page : form action');
 		console.log(formData);
@@ -36,6 +36,17 @@ export const actions: Actions = {
 			const key = await auth.useKey('username', username.toLowerCase(), password);
 			console.log('LOGIN page - form action : key');
 			console.log(key);
+
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#createsession
+			// 2. create a new session once the user is created
+			const session = await auth.createSession({
+				userId: key.userId,
+				attributes: {}
+			});
+
+			// https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession
+			// 3. store the session on the locals object and set session cookie
+			locals.auth.setSession(session);
 		} catch (e) {
 			console.log(e);
 		}
