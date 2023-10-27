@@ -2335,3 +2335,9 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	}
 };
 ```
+
+As an exercise you could now also only show the links to the `signup` and `login` page to public users and hide them for logged in users.
+
+Give it a try, you can do it, I know it.
+
+:muscle: :smile: :rocket: :computer: :crossed_fingers:
