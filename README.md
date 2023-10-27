@@ -1855,3 +1855,209 @@ Now checkout the next branch.
 ```bash
 git checkout 013-handle-errors
 ```
+
+## 10.4 Handle Errors
+
+Lucia throws 2 types of errors: `LuciaError` and database errors from the database driver or ORM you’re using.
+
+:bulb: <a href="https://lucia-auth.com/reference/lucia/modules/main#luciaerror" target="_blank">https://lucia-auth.com/reference/lucia/modules/main#luciaerror</a>
+
+Most database related errors, such as connection failure, duplicate values, and foreign key constraint errors, are thrown as is. These need to be handled as if you were using just the driver/ORM.
+
+Find details about how Prisma does error handling.
+
+:bulb: <a href="https://www.prisma.io/docs/concepts/components/prisma-client/handling-exceptions-and-errors" target="_blank">https://www.prisma.io/docs/concepts/components/prisma-client/handling-exceptions-and-errors</a>
+
+:bulb: <a href="https://www.prisma.io/docs/reference/api-reference/error-reference" target="_blank">https://www.prisma.io/docs/reference/api-reference/error-reference</a>
+
+:bulb: <a href="https://www.prisma.io/docs/reference/api-reference/error-reference#error-codes" target="_blank">https://www.prisma.io/docs/reference/api-reference/error-reference#error-codes</a>
+
+:bulb: <a href="https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/error-formatting" target="_blank">https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/error-formatting</a>
+
+Let's try and log a `PrismaClientKnownRequestError` with Prisma.
+
+:bulb: <a href="https://www.prisma.io/docs/reference/api-reference/error-reference#prismaclientknownrequesterror" target="_blank">https://www.prisma.io/docs/reference/api-reference/error-reference#prismaclientknownrequesterror</a>
+
+:bulb: <a href="https://www.prisma.io/docs/reference/api-reference/error-reference#p2002" target="_blank">https://www.prisma.io/docs/reference/api-reference/error-reference#p2002</a>
+
+You should already have adjusted your Prisma module to `log` the `query` and `export` the `PrismaError` from Prisma Client.
+
+**src/lib/server/prisma.ts**
+
+```ts
+import { Prisma, PrismaClient } from '@prisma/client';
+
+export const db = new PrismaClient({
+	log: ['query']
+});
+
+export const PrismaError = Prisma;
+```
+
+**src/routes/login/+page.server.ts**
+
+```ts
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	console.log(new Date());
+	console.log('LOGIN page : load function');
+};
+
+import type { Actions } from './$types';
+import { fail } from '@sveltejs/kit';
+import { auth } from '$lib/server/lucia';
+import { LuciaError } from 'lucia';
+import { PrismaError } from '$lib/server/prisma';
+
+export const actions: Actions = {
+	default: async ({ request, locals }) => {
+		const formData = await request.formData();
+		console.log('LOGIN page : form action');
+		console.log(formData);
+
+		const username = formData.get('username');
+		const password = formData.get('password');
+
+		// basic check
+		if (typeof username !== 'string' || username.length < 4 || username.length > 32) {
+			return fail(400, {
+				message: 'Invalid username'
+			});
+		}
+		if (typeof password !== 'string' || password.length < 4 || password.length > 8) {
+			return fail(400, {
+				message: 'Invalid password'
+			});
+		}
+
+		try {
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#usekey
+			// 1. find user by key and check if the password is defined and check if the password is correct/valid
+			const key = await auth.useKey('username', username.toLowerCase(), password);
+			console.log('LOGIN page - form action : key');
+			console.log(key);
+
+			// https://lucia-auth.com/reference/lucia/interfaces/auth#createsession
+			// 2. create a new session once the user is created
+			const session = await auth.createSession({
+				userId: key.userId,
+				attributes: {}
+			});
+
+			// https://lucia-auth.com/reference/lucia/interfaces/authrequest#setsession
+			// 3. store the session on the locals object and set session cookie
+			locals.auth.setSession(session);
+		} catch (e) {
+			//
+			// Prisma error
+			// https://www.prisma.io/docs/reference/api-reference/error-reference#prismaclientknownrequesterror
+			if (e instanceof PrismaError.PrismaClientKnownRequestError) {
+				//
+				// https://www.prisma.io/docs/reference/api-reference/error-reference#p2002
+				// The .code property can be accessed in a type-safe manner
+				if (e.code === 'P2002') {
+					console.log(`Unique constraint failed on the ${e?.meta?.target}`);
+					console.log('\n');
+					console.log('e : ' + e);
+					console.log('e.meta : ' + e?.meta);
+					console.log('e.meta.target : ' + e?.meta?.target);
+
+					// return the error to the page with SvelteKit's fail function
+					return fail(400, { message: `Unique constraint failed on the field ${e?.meta?.target}` });
+				}
+			}
+			// Lucia error
+			// https://lucia-auth.com/reference/lucia/modules/main#luciaerror
+			if (e instanceof LuciaError) {
+				// Lucia error
+				return fail(400, { message: String(e) });
+			}
+			// throw any other error that is not caught by above conditions
+			return fail(400, { message: String(e) });
+		}
+	}
+};
+```
+
+To display the returned error `message` on the `login` page you `export` the `form` property on the page and work with the error.
+
+Use the Svelte `class` directive to trigger the `.error` class on the `form` property.
+
+:bulb: <a href="https://learn.svelte.dev/tutorial/classes" target="_blank">https://learn.svelte.dev/tutorial/classes</a>
+
+**src/routes/login/+page.svelte**
+
+```html
+<script lang="ts">
+	// export the form property on this page to show the return value of the form action on the page
+	import type { ActionData } from './$types';
+	export let form: ActionData;
+</script>
+
+<a href="/">Home</a>
+<a href="/signup">Sign Up With Username</a>
+<hr />
+
+<h1>Log In</h1>
+<hr />
+
+<form id="login" method="POST">
+	<label for="username">Username</label>
+	<input
+		required
+		type="text"
+		name="username"
+		id="username"
+		minlength="4"
+		maxlength="32"
+		placeholder="Choose Your Username"
+		value="cyber.punk.9731"
+	/>
+
+	<label for="password">Password</label>
+	<input
+		required
+		type="text"
+		name="password"
+		id="password"
+		minlength="4"
+		maxlength="8"
+		placeholder="Choose Your password"
+		value="12345678"
+	/>
+
+	<button form="login" type="submit">Submit</button>
+</form>
+
+<!-- show the return value from the form action -->
+<!-- use the Svelte class directive to trigger the CSS .error class -->
+<pre class:error="{form?.message}">{JSON.stringify(form, null, 2)}</pre>
+
+<style>
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	button {
+		border-radius: 10px;
+	}
+	.error {
+		background-color: darkred;
+		color: lightgoldenrodyellow;
+		border-radius: 10px;
+		border: 4px solid darkslateblue;
+	}
+</style>
+```
+
+:exclamation: Change the form values to something that will break the validation to see the server-side check kick in. :exclamation:
+
+<img src="/static/Screenshot_20231027_083813.png">
+
+Now checkout the next branch.
+
+```bash
+git checkout 014-redirect-authenticated-user
+```
