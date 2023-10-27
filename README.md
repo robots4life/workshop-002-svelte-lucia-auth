@@ -1527,13 +1527,13 @@ Now checkout the next branch.
 git checkout 010-login-user
 ```
 
-## 10. Login User
+## 9. Login User
 
 In the next steps you are going to add the code needed to **authenticate an existing user** against their details in the database.
 
 All of this is done server-side in the **src/routes/login/+page.server.ts** file.
 
-### 10.1 Do a basic check with the received form values
+### 9.1 Do a basic check with the received form values
 
 If the request couldn't be processed because of invalid data, you can return validation errors - along with the previously submitted form values - back to the user, so that they can try again.
 
@@ -1583,7 +1583,7 @@ Now checkout the next branch.
 git checkout 011-authenticate-user
 ```
 
-### 10.2 Authenticate an Existing User
+### 9.2 Authenticate an Existing User
 
 Similar to the default `form action` for the `signup` page you have a default `form action` for the `login` page in a `+page.server.ts` file.
 
@@ -1697,7 +1697,7 @@ Now checkout the next branch.
 git checkout 012-create-user-session
 ```
 
-### 10.3 Create a User Session
+### 9.3 Create a User Session
 
 Sessions can be created with `Auth.createSession()` and can be stored as a cookie.
 
@@ -1856,7 +1856,7 @@ Now checkout the next branch.
 git checkout 013-handle-errors
 ```
 
-## 10.4 Handle Errors
+### 9.4 Handle Errors
 
 Lucia throws 2 types of errors: `LuciaError` and database errors from the database driver or ORM you’re using.
 
@@ -2062,7 +2062,7 @@ Now checkout the next branch.
 git checkout 014-redirect-authenticated-user
 ```
 
-## 11. Redirect an Authenticated User
+## 10. Redirect an Authenticated User
 
 After an **existing** user has successfully logged in with their `username` and `password` on the `login` page it makes sense to `redirect` that user to another page of the app instead of staying on the `login` page.
 
@@ -2168,7 +2168,7 @@ Now checkout the next branch.
 git checkout 015-logout-user
 ```
 
-## 12. Logout User
+## 11. Logout User
 
 Last not least, it is time to also log out an authenticated user. This could best be done on the `profile` page.
 
