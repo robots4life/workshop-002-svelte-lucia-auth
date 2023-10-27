@@ -2256,3 +2256,9 @@ export const actions: Actions = {
 Well done, you have come a long way and learned quite a bit.
 
 Sit back, or stand up and stretch out, have a break, and enjoy what you have accomplished. :tada: :rocket:
+
+Now checkout the next branch.
+
+```bash
+git checkout 016-markup-session
+```
