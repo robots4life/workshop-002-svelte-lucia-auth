@@ -2262,3 +2262,76 @@ Now checkout the next branch.
 ```bash
 git checkout 016-markup-session
 ```
+
+## 12. Conditionally show Markup given a Session
+
+Having the link to the `profile` page on the root/index/home page and showing that to logged out and public users does not make a lot of sense.
+
+:exclamation: The `profile` page, as you now know, is protected and cannot be accessed by a public user. :exclamation:
+
+However if you like to show a link **to** the `profile` page on the root/index/home page for **logged in users** you can do so with a condition in the markup.
+
+Import the `data` property for that page and check in a condition if there is a `username` attached to it, show the link to the `profile` page only if the `data` property also has a `username` attached to it.
+
+**src/routes/+page.svelte**
+
+```html
+<script lang="ts">
+	import type { PageData } from './$types';
+	export let data: PageData;
+	console.log('ROOT page : data');
+
+	console.log(data);
+</script>
+
+<a href="/signup">Sign Up With Username</a>
+<a href="/login">Log In With Username</a>
+
+{#if data.username}
+<a href="/profile">View Profile</a>
+{/if}
+<hr />
+
+<h1>Welcome to SvelteKit</h1>
+<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+```
+
+But where does the data come from ?
+
+Using a `+layout.server.ts` file in the `routes` directory of your app, so in the `src/routes` directory, you can pass data to all pages in that directory, so everything you load in a `+layout.server.ts` file will be available to all the pages/routes of that layout.
+
+In `+layout.server.ts` you can check if there is a `session` and given that information `return` that data to the pages.
+
+:bulb: Note, you do not have to return any sensitive `sessions` data, you could also just have a simple value instead of returning `session.user.username` to all pages of the layout, that is up to you and how you create your app.
+
+```ts
+if (session) {
+	return {
+		loggedIn: true
+	};
+}
+```
+
+**+layout.server.ts**
+
+```ts
+import type { LayoutServerLoad } from './$types';
+
+export const load: LayoutServerLoad = async ({ locals }) => {
+	console.log(new Date());
+	console.log('LAYOUT SERVER : load function');
+
+	// call the validate() method to check for a valid session
+	// https://lucia-auth.com/reference/lucia/interfaces/authrequest#validate
+	const session = await locals.auth.validate();
+
+	console.log('LAYOUT SERVER : session ');
+	console.log(session);
+
+	if (session) {
+		return {
+			username: session.user.username
+		};
+	}
+};
+```
